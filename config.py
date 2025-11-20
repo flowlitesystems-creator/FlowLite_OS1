@@ -1,0 +1,4 @@
+WHATSAPP_NUMBER = "000000000"
+SISTEMA_VERSION = "OS 1.0"
+DB_NAME = "flowlite_os1.db"
+
