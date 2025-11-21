@@ -4,18 +4,20 @@ from datetime import datetime
 from config import DB_NAME
 
 
-# -----------------------------
+# ============================================================
 #  CONEXIÓN A BASE DE DATOS
-# -----------------------------
+# ============================================================
+
 def conectar_db():
     conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
+    conn.row_factory = sqlite3.Row  # Permite acceder por nombre
     return conn
 
 
-# -----------------------------
+# ============================================================
 #  CREAR TABLA SI NO EXISTE
-# -----------------------------
+# ============================================================
+
 def inicializar_db():
     conn = conectar_db()
     cursor = conn.cursor()
@@ -34,9 +36,10 @@ def inicializar_db():
     conn.close()
 
 
-# -----------------------------
+# ============================================================
 #  REGISTRAR CLIENTE
-# -----------------------------
+# ============================================================
+
 def registrar_cliente(nombre, telefono, origen):
     conn = conectar_db()
     cursor = conn.cursor()
@@ -51,9 +54,10 @@ def registrar_cliente(nombre, telefono, origen):
     return True
 
 
-# -----------------------------
+# ============================================================
 #  LISTAR CLIENTES
-# -----------------------------
+# ============================================================
+
 def listar_clientes():
     conn = conectar_db()
     cursor = conn.cursor()
@@ -61,12 +65,22 @@ def listar_clientes():
     rows = cursor.fetchall()
     conn.close()
 
-    return [dict(r) for r in rows]
+    return [
+        {
+            "id": r["id"],
+            "nombre": r["nombre"],
+            "telefono": r["telefono"],
+            "origen": r["origen"],
+            "fecha": r["fecha"]
+        }
+        for r in rows
+    ]
 
 
-# -----------------------------
-#  BUSCAR CLIENTE (POR NOMBRE)
-# -----------------------------
+# ============================================================
+#   BUSCAR POR NOMBRE
+# ============================================================
+
 def buscar_por_nombre(nombre):
     conn = conectar_db()
     cursor = conn.cursor()
@@ -76,9 +90,10 @@ def buscar_por_nombre(nombre):
     return [dict(r) for r in rows]
 
 
-# -----------------------------
-#  BUSCAR CLIENTE (POR TELEFONO)
-# -----------------------------
+# ============================================================
+#   BUSCAR POR TELÉFONO
+# ============================================================
+
 def buscar_por_telefono(telefono):
     conn = conectar_db()
     cursor = conn.cursor()
@@ -88,9 +103,10 @@ def buscar_por_telefono(telefono):
     return [dict(r) for r in rows]
 
 
-# -----------------------------
-#  BUSCAR CLIENTE (POR ORIGEN)
-# -----------------------------
+# ============================================================
+#   BUSCAR POR ORIGEN
+# ============================================================
+
 def buscar_por_origen(origen):
     conn = conectar_db()
     cursor = conn.cursor()
@@ -100,9 +116,30 @@ def buscar_por_origen(origen):
     return [dict(r) for r in rows]
 
 
-# -----------------------------
-#  ELIMINAR CLIENTE
-# -----------------------------
+# ============================================================
+#   ACTUALIZAR CLIENTE
+# ============================================================
+
+def actualizar_cliente(id_cliente, nombre, telefono, origen):
+    conn = conectar_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE clientes
+        SET nombre = ?, telefono = ?, origen = ?
+        WHERE id = ?
+    """, (nombre, telefono, origen, id_cliente))
+
+    conn.commit()
+    cambiado = cursor.rowcount > 0
+    conn.close()
+    return cambiado
+
+
+# ============================================================
+#   ELIMINAR CLIENTE
+# ============================================================
+
 def eliminar_cliente(id_cliente):
     conn = conectar_db()
     cursor = conn.cursor()
@@ -112,9 +149,10 @@ def eliminar_cliente(id_cliente):
     return True
 
 
-# -----------------------------
+# ============================================================
 #  CONTAR CLIENTES
-# -----------------------------
+# ============================================================
+
 def contar_clientes():
     conn = conectar_db()
     cursor = conn.cursor()
@@ -124,9 +162,10 @@ def contar_clientes():
     return total
 
 
-# -----------------------------
+# ============================================================
 #  EXPORTAR A CSV
-# -----------------------------
+# ============================================================
+
 def exportar_csv(nombre_archivo="clientes_exportados.csv"):
     conn = conectar_db()
     cursor = conn.cursor()
@@ -139,20 +178,27 @@ def exportar_csv(nombre_archivo="clientes_exportados.csv"):
         writer.writerow(["ID", "Nombre", "Telefono", "Origen", "Fecha"])
 
         for r in rows:
-            writer.writerow([r["id"], r["nombre"], r["telefono"], r["origen"], r["fecha"]])
+            writer.writerow([
+                r["id"],
+                r["nombre"],
+                r["telefono"],
+                r["origen"],
+                r["fecha"]
+            ])
 
     return True
 
 
-# -----------------------------
+# ============================================================
 #  IMPORTAR DESDE CSV
-# -----------------------------
+# ============================================================
+
 def importar_csv(nombre_archivo):
     conn = conectar_db()
     cursor = conn.cursor()
 
     with open(nombre_archivo, "r", encoding="utf-8") as csvfile:
-        for linea in csvfile.readlines()[1:]:  # saltar encabezado
+        for linea in csvfile.readlines()[1:]:  # evitar encabezado
             campos = linea.strip().split(",")
 
             if len(campos) < 5:
@@ -170,36 +216,10 @@ def importar_csv(nombre_archivo):
     return True
 
 
-# -----------------------------
-#  ACTUALIZAR CLIENTE (NUEVO)
-# -----------------------------
-def actualizar_cliente(id_cliente, nuevo_nombre, nuevo_telefono, nuevo_origen):
-    conn = conectar_db()
-    cursor = conn.cursor()
+# ============================================================
+#  INICIO DIRECTO
+# ============================================================
 
-    # Verificar si existe
-    cursor.execute("SELECT * FROM clientes WHERE id = ?", (id_cliente,))
-    registro = cursor.fetchone()
-
-    if not registro:
-        conn.close()
-        return False  # Cliente no existe
-
-    # Actualizar datos
-    cursor.execute("""
-        UPDATE clientes
-        SET nombre = ?, telefono = ?, origen = ?
-        WHERE id = ?
-    """, (nuevo_nombre, nuevo_telefono, nuevo_origen, id_cliente))
-
-    conn.commit()
-    conn.close()
-    return True
-
-
-# -----------------------------
-#  INICIO
-# -----------------------------
 if __name__ == "__main__":
     inicializar_db()
     print("FlowLite OS 1.0 iniciado correctamente.")
